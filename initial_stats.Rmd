@@ -106,8 +106,21 @@ fitDist(prop_elongated, data = polyp_clean, type = "real0to1", try.gamlss = T)
 # ruffled: logit normal (AIC = -9.42)
 fitDist(prop_ruffled, data = polyp_clean, type = "real0to1", try.gamlss = T)
 
+# getting rid of polyp jar 11, as it is an outlier in buds and prevents model from running (see model below that does not converge)
+
 # buds: generalized beta 1 (AIC = -41.12)
-fitDist(prop_buds, data = polyp_clean, type = "real0to1", try.gamlss = T)
+# fitDist(prop_buds, data = polyp_clean, type = "real0to1", try.gamlss = T)
+# mod_buds <- gamlss(prop_buds ~ treatment*collection_day + re(random = ~1 | jar_code), family = GB1(), data = polyp_clean, control = gamlss.control(n.cyc = 250))
+# histDist(polyp_clean$prop_buds, "GB1", density = T, main = "Gen Beta 1")
+
+library(dplyr)
+polyp_buds <- polyp_clean %>%
+  slice(-c(35))
+
+# buds: generalized beta 1 (AIC = -50.91) - still does not converge
+fitDist(prop_buds, data = polyp_buds, type = "real0to1", try.gamlss = T)
+mod_buds <- gamlss(prop_buds ~ treatment*collection_day + re(random = ~1 | jar_code), family = GB1(), data = polyp_buds, control = gamlss.control(n.cyc = 250))
+histDist(polyp_buds$prop_buds, "GB1", density = T, main = "Gen Beta 1")
 
 # total: delaporte (AIC = 203.37)
 fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
@@ -129,9 +142,8 @@ histDist(polyp_clean$prop_ruffled, "LOGITNO", density = T, main = "Logit Normal"
 summary(mod_ruffled)
 # p-value = 6.99e-05, so significant!
 
-# Buds: Generalized Beta 1 (GB1)
-mod_buds <- gamlss(prop_buds ~ treatment*collection_day + re(random = ~1 | jar_code), family = GB1(), data = polyp_clean, control = gamlss.control(n.cyc = 250))
-histDist(polyp_clean$prop_buds, "GB1", density = T, main = "Gen Beta 1")
+
+
 
 # Total: Delaporte (DEL)
 mod_total <- gamlss(total_num ~ treatment*collection_day + re(random = ~1 | jar_code), family = DEL(), data = polyp_clean, control = gamlss.control(n.cyc = 60))
