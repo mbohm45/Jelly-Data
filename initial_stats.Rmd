@@ -121,11 +121,13 @@ fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
 mod_elongation <- gamlss(prop_elongated ~ treatment*collection_day + re(random = ~1 | jar_code), family = LOGITNO(), data = polyp_clean, control = gamlss.control(n.cyc = 60))
 histDist(polyp_clean$prop_elongated, "LOGITNO", density = T, main = "Logit Normal")
 summary(mod_elongation)
+# p-value = 0.117, so not significant
 
 # Ruffled: Logit Normal (LOGITNO)
 mod_ruffled <- gamlss(prop_ruffled ~ treatment*collection_day + re(random = ~1 | jar_code), family = LOGITNO(), data = polyp_clean, control = gamlss.control(n.cyc = 50))
 histDist(polyp_clean$prop_ruffled, "LOGITNO", density = T, main = "Logit Normal")
 summary(mod_ruffled)
+# p-value = 6.99e-05, so significant!
 
 # Buds: Generalized Beta 1 (GB1)
 mod_buds <- gamlss(prop_buds ~ treatment*collection_day + re(random = ~1 | jar_code), family = GB1(), data = polyp_clean, control = gamlss.control(n.cyc = 250))
@@ -135,6 +137,7 @@ histDist(polyp_clean$prop_buds, "GB1", density = T, main = "Gen Beta 1")
 mod_total <- gamlss(total_num ~ treatment*collection_day + re(random = ~1 | jar_code), family = DEL(), data = polyp_clean, control = gamlss.control(n.cyc = 60))
 histDist(polyp_clean$total_num, "DEL", density = T, main = "Delaporte")
 summary(mod_total)
+# p-value = 0.998, so not significant
 
 ```
 
