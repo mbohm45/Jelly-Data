@@ -118,7 +118,7 @@ fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
 ```{r}
 # creating the models
 # Elongation: Logit Normal (LOGITNO)
-mod_elongation <- gamlss(prop_elongated ~ treatment*collection_day + re(random = ~1 | jar_code), family = GB1(), data = polyp_clean, control = gamlss.control(n.cyc = 250))
+mod_elongation <- gamlss(prop_elongated ~ treatment*collection_day + re(random = ~1 | jar_code), family = LOGITNO(), data = polyp_clean, control = gamlss.control(n.cyc = 60))
 summary(mod_elongation)
 
 # Ruffled: Logit Normal (LOGITNO)
