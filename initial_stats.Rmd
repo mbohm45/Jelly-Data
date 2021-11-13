@@ -22,28 +22,32 @@ ephyra_data <-read.csv("Jelly data - Ephyra.csv")
 ```
 
 ```{r}
+# fixing ephyra data
 ephyra_clean <- ephyra_data %>%
-  rename(collection_day = Data.collection.day,
-         jar_code = Jar.Code..ex..E1.,
-         num_pulsations = Number.of.pulsations, 
-         radius = Radius, 
-         treatment = Chemical) %>%
-  select(collection_day, jar_code, treatment, num_pulsations, radius) %>%
+  rename(collection_day = "Data.collection.day",
+         jar_code = "Jar.Code..ex..E1.",
+         num_pulsations = "Number.of.pulsations", 
+         radius = "Radius", 
+         treatment = "Chemical") %>%
+  mutate(jar_code = as.factor(jar_code)) %>%
+  dplyr::select(collection_day, jar_code, treatment, num_pulsations, radius) %>%
   na.omit()
 
+# fixing polyp data
 polyp_clean <- polyp_data %>%
-  rename(collection_day = Data.collection.day, 
-         jar_code = Jar.Code..ex..E1., 
+  rename(collection_day = 'Data.collection.day', 
+         jar_code = 'Jar.Code..ex..E1.', 
          treatment = Chemical, 
-         num_elongated = Elongation., 
-         num_ruffled = Ruffled., 
-         num_asexual_buds = Asexual.Repro., 
+         num_elongated = 'Elongation.', 
+         num_ruffled = 'Ruffled.', 
+         num_asexual_buds = 'Asexual.Repro.', 
          total_num = Total) %>%
-  mutate(prop_elongated = num_elongated/total_num, 
-         prop_ruffled = num_ruffled/total_num, 
-         prop_buds = num_asexual_buds/total_num,
-         polyp_clean = as.factor(jar_code))  %>%
-  select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num)
+  mutate(prop_elongated = num_elongated/total_num + 0.001, 
+         prop_ruffled = num_ruffled/total_num + 0.001, 
+         prop_buds = num_asexual_buds/total_num + 0.001,
+         jar_code = as.factor(jar_code))  %>%
+  dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num) 
+
 ```
 
 ```{r}
@@ -66,11 +70,13 @@ total_num =
 
 (elongation_per_day | ruffles_per_day)/(asexual_buds_per_day | total_num)
 ```
+
 ```{r}
 ggplot(ephyra_clean, aes(x=collection_day, y=radius, colour=treatment)) +
   geom_point() +
   geom_smooth(method=lm, se=FALSE)
 ```
+
 ```{r}
 ggplot(polyp_clean, aes(x=collection_day, y=num_elongated, colour=treatment))+
   geom_point() +
@@ -91,47 +97,24 @@ From Sara::
 
 2. assess distributions (check out T08) 
 ```{r}
-# narrowing down distributions  
+# fitting distributions for data
 
-descdist(polyp_clean$prop_elongated)
-# normal, uniform, beta and gamma
+# elongation: logit normal (AIC = -7.34)
+fitDist(prop_elongated, data = polyp_clean, type = "real0to1", try.gamlss = T)
+e_GB1 <- gamlss(prop_elongated ~ treatment*collection_day + re(random = ~1 | jar_code), family =GB1(), data = polyp_clean)
 
-descdist(polyp_clean$prop_ruffled)
-# uniform, beta, normal, gamma
+# ruffled: logit normal (AIC = -9.42)
+fitDist(prop_ruffled, data = polyp_clean, type = "real0to1", try.gamlss = T)
+r_LOGITNO <- gamlss(prop_ruffled ~ treatment*collection_day + re(random = ~1 | jar_code), family = LOGITNO(), data = polyp_clean)
 
-descdist(polyp_clean$prop_buds)
-# Weibull, lognormal, gamma, beta
-
-# histogram of data over-layed by distributions
-# elongation:
-e_NO <- histDist(polyp_clean$prop_elongated, "NO", density = T, main = "Normal")
-e_BE <- histDist(polyp_clean$prop_elongated, "BE", density = T, main = "Beta")
-e_GA <- histDist(polyp_clean$prop_elongated, "GA", density = T, main = "Gamma")
-fit.gamma <- fitdist(polyp_clean$prop_elongated, "gamma")
-plot(fit.gamma)
-
-# ruffled 
-r_BE <- histDist(polyp_clean$prop_ruffled, "BE", density = T, main = "Beta")
-r_NO <- histDist(polyp_clean$prop_ruffled, "NO", density = T, main = "Normal")
-r_GA <- histDist(polyp_clean$prop_ruffled, "GA", density = T, main = "Gamma")
-
-# buds
-b_GA <- histDist(polyp_clean$prop_buds, "GA", density = T, main = "Gamma")
-b_BE <- histDist(polyp_clean$prop_buds, "BE", density = T, main = "Beta")
-b_WEI <- histDist(polyp_clean$prop_buds, "WEI", density = T, main = "Weibull")
-
-# running models for narrowed distributions
-GAIC(e_NO, e_BE, e_GA)
-# gamma is best (AIC = -6.23)
-GAIC(r_NO, r_BE, r_GA)
-# beta is best (AIC = -4.76) - retest with uniform!!
-GAIC(b_GA, b_BE, b_WEI)
-# whynowork:(
+# buds: generalized beta 1 (AIC = -41.12)
+fitDist(prop_buds, data = polyp_clean, type = "real0to1", try.gamlss = T)
+b_GB1 <- gamlss(prop_ruffled ~ treatment*collection_day + re(random = ~1 | jar_code), family = LOGITNO(), data = polyp_clean)
 
 ```
 
 3. using response distributions, choose model function - gamma or poisson is prob glm, bino neg binom is probably gamlss 
 ```{r}
-elong.mod <- glm(prop_elongated ~ treatment + collection_day + (1 | jar_code), data = polyp_clean)
+elong.mod <- glm(prop_elongated ~ treatment * collection_day + (1 | jar_code), data = polyp_clean)
 ```
 
