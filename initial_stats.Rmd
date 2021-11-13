@@ -90,6 +90,7 @@ summary(ephyra.mod)
 
 
 
+# polyps
 
 From Sara:: 
 
@@ -101,20 +102,33 @@ From Sara::
 
 # elongation: logit normal (AIC = -7.34)
 fitDist(prop_elongated, data = polyp_clean, type = "real0to1", try.gamlss = T)
-e_GB1 <- gamlss(prop_elongated ~ treatment*collection_day + re(random = ~1 | jar_code), family =GB1(), data = polyp_clean)
 
 # ruffled: logit normal (AIC = -9.42)
 fitDist(prop_ruffled, data = polyp_clean, type = "real0to1", try.gamlss = T)
-r_LOGITNO <- gamlss(prop_ruffled ~ treatment*collection_day + re(random = ~1 | jar_code), family = LOGITNO(), data = polyp_clean)
 
 # buds: generalized beta 1 (AIC = -41.12)
 fitDist(prop_buds, data = polyp_clean, type = "real0to1", try.gamlss = T)
-b_GB1 <- gamlss(prop_ruffled ~ treatment*collection_day + re(random = ~1 | jar_code), family = LOGITNO(), data = polyp_clean)
+
+# total: delaporte (AIC = 203.37)
+fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
 
 ```
 
 3. using response distributions, choose model function - gamma or poisson is prob glm, bino neg binom is probably gamlss 
 ```{r}
-elong.mod <- glm(prop_elongated ~ treatment * collection_day + (1 | jar_code), data = polyp_clean)
+# creating the models
+# Elongation: Logit Normal (LOGITNO)
+mod_elongation <- gamlss(prop_elongated ~ treatment*collection_day + re(random = ~1 | jar_code), family = GB1(), data = polyp_clean, control = gamlss.control(n.cyc = 250))
+summary(mod_elongation)
+
+# Ruffled: Logit Normal (LOGITNO)
+mod_ruffled <- gamlss(prop_ruffled ~ treatment*collection_day + re(random = ~1 | jar_code), family = LOGITNO(), data = polyp_clean, control = gamlss.control(n.cyc = 50))
+summary(mod_elongation)
+
+# Buds: Generalized Beta 1 (GB1)
+mod_buds <- gamlss(prop_buds ~ treatment*collection_day + re(random = ~1 | jar_code), family = GB1(), data = polyp_clean, control = gamlss.control(n.cyc = 100))
+
+# Total: Delaporte (DEL)
+mod_total <- gamlss(total_num ~ treatment*collection_day + re(random = ~1 | jar_code), family = DEL(), data = polyp_clean, control = gamlss.control(n.cyc = 60))
 ```
 
