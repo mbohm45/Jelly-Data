@@ -97,13 +97,13 @@ From Sara::
 ```{r}
 # fitting distributions for data
 
-# elongation: logit normal (AIC = -7.34)
+# elongation: logit normal (AIC = -11.99)
 fitDist(prop_elongated, data = polyp_clean, type = "real0to1", try.gamlss = T)
 
-# ruffled: logit normal (AIC = -9.42)
+# ruffled: logit normal (AIC = -14.40)
 fitDist(prop_ruffled, data = polyp_clean, type = "real0to1", try.gamlss = T)
 
-# buds: Generalized Beta Type 2 (AIC = -41.24)
+# buds: Generalized Beta Type 2 (AIC = -55.22)
 b_BE <- histDist(polyp_clean$prop_buds, "GB1", density = T)
 b_BE2 <- histDist(polyp_clean$prop_buds, "GB2", density = T)
 fitDist(prop_buds, data = polyp_clean, type = "real0to1", try.gamlss = T)
@@ -114,7 +114,7 @@ b_GA <- histDist(polyp_clean$prop_buds, "GA", density = T)
 b_WEI <- histDist(polyp_clean$prop_buds, "WEI", density = T)
 GAIC(b_lNO, b_GA, b_WEI, b_BE, b_BE2)
 
-# total: delaporte (AIC = 203.37)
+# total: delaporte (AIC = 318.28)
 fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
 
 ```
@@ -133,7 +133,7 @@ histDist(polyp_clean$prop_elongated,
          density = T, 
          main = "Logit Normal")
 summary(mod_elongation)
-# p-value = 0.117, so not significant
+# p-value = 0.104, so not significant
 
 # Ruffled: Logit Normal (LOGITNO)
 mod_ruffled <- gamlss(prop_ruffled ~ treatment*collection_day 
@@ -146,7 +146,7 @@ histDist(polyp_clean$prop_ruffled,
          density = T, 
          main = "Logit Normal")
 summary(mod_ruffled)
-# p-value = 6.99e-05, so significant!
+# p-value = 0.0413, so significant!
 
 # Buds: Generalized Beta Type 2 (GB2)
 mod_buds <- gamlss(prop_buds ~ treatment*collection_day 
@@ -160,7 +160,7 @@ histDist(polyp_clean$prop_buds,
          density = T, 
          main = "Generalized Beta Type 2")
 summary(mod_buds)
-# p-value = 0.172, so not significant
+# p-value = 0.138, so not significant
 
 # Total: Delaporte (DEL)
 mod_total <- gamlss(total_num ~ treatment*collection_day 
@@ -179,6 +179,42 @@ summary(mod_total)
 
 # ephyra
 ```{r}
+# fitting distributions for data
+
+# radius: Generalized Poisson (AIC = 2390.01)
+fitDist(radius, data = ephyra_clean, type = "counts", try.gamlss = T)
+
+# pulsations: Zero Inflated Negative Binomial type I (AIC = 1483.84)
+fitDist(num_pulsations, data = ephyra_clean, type = "counts", try.gamlss = T)
+```
+
+```{r}
+# creating the models
+# Radius: Generalized Poisson (GPO)
+mod_total <- gamlss(radius ~ treatment*collection_day 
+                    + re(random = ~1 | jar_code), 
+                    family = GPO(), 
+                    data = ephyra_clean, 
+                    control = gamlss.control(n.cyc = 60))
+histDist(ephyra_clean$radius,
+         "GPO", 
+         density = T, 
+         main = "Generalized Poisson")
+summary(mod_total)
+# p-value < 2e-16, so it is significant!
+
+# Pulsations: Zero Inflated Negative Binomial type I (ZINBI)
+mod_total <- gamlss(num_pulsations ~ treatment*collection_day 
+                    + re(random = ~1 | jar_code), 
+                    family = ZINBI(), 
+                    data = ephyra_clean, 
+                    control = gamlss.control(n.cyc = 60))
+histDist(ephyra_clean$radius,
+         "ZINBI", 
+         density = T, 
+         main = " Zero Inflated Negative Binomial type I")
+summary(mod_total)
+# p-value < 2e-16, so it is significant!
 
 ```
 
