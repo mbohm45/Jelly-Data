@@ -51,6 +51,7 @@ polyp_clean <- polyp_data %>%
 ```
 
 ```{r}
+# making an initial 4 part graph to peek at the polyp response variable data
 elongation_per_day = 
   ggplot(polyp_clean, aes(x=collection_day, y=num_elongated)) +
          geom_point() +
@@ -72,22 +73,18 @@ total_num =
 ```
 
 ```{r}
+# initial graph of ephyra data to see what it looks like
 ggplot(ephyra_clean, aes(x=collection_day, y=radius, colour=treatment)) +
   geom_point() +
   geom_smooth(method=lm, se=FALSE)
 ```
 
 ```{r}
+# initial graph of polyp data to see what it looks like
 ggplot(polyp_clean, aes(x=collection_day, y=num_elongated, colour=treatment))+
   geom_point() +
   geom_smooth(method=lm, se=FALSE)
 ```
-
-```{r}
-ephyra.mod <- lm(radius ~ treatment, data=ephyra_clean)
-summary(ephyra.mod)
-```
-
 
 
 # polyps
@@ -106,21 +103,16 @@ fitDist(prop_elongated, data = polyp_clean, type = "real0to1", try.gamlss = T)
 # ruffled: logit normal (AIC = -9.42)
 fitDist(prop_ruffled, data = polyp_clean, type = "real0to1", try.gamlss = T)
 
-# getting rid of polyp jar 11, as it is an outlier in buds and prevents model from running (see model below that does not converge)
+# buds: Generalized Beta Type 2 (AIC = -41.24)
+b_BE <- histDist(polyp_clean$prop_buds, "GB1", density = T)
+b_BE2 <- histDist(polyp_clean$prop_buds, "GB2", density = T)
+fitDist(prop_buds, data = polyp_clean, type = "real0to1", try.gamlss = T)
+descdist(polyp_clean$prop_buds)
 
-# buds: generalized beta 1 (AIC = -41.12)
-# fitDist(prop_buds, data = polyp_clean, type = "real0to1", try.gamlss = T)
-# mod_buds <- gamlss(prop_buds ~ treatment*collection_day + re(random = ~1 | jar_code), family = GB1(), data = polyp_clean, control = gamlss.control(n.cyc = 250))
-# histDist(polyp_clean$prop_buds, "GB1", density = T, main = "Gen Beta 1")
-
-library(dplyr)
-polyp_buds <- polyp_clean %>%
-  slice(-c(35))
-
-# buds: generalized beta 1 (AIC = -50.91) - still does not converge
-fitDist(prop_buds, data = polyp_buds, type = "real0to1", try.gamlss = T)
-mod_buds <- gamlss(prop_buds ~ treatment*collection_day + re(random = ~1 | jar_code), family = GB1(), data = polyp_buds, control = gamlss.control(n.cyc = 250))
-histDist(polyp_buds$prop_buds, "GB1", density = T, main = "Gen Beta 1")
+b_lNO <- histDist(polyp_clean$prop_buds, "LOGNO", density = T)
+b_GA <- histDist(polyp_clean$prop_buds, "GA", density = T)
+b_WEI <- histDist(polyp_clean$prop_buds, "WEI", density = T)
+GAIC(b_lNO, b_GA, b_WEI, b_BE, b_BE2)
 
 # total: delaporte (AIC = 203.37)
 fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
@@ -131,25 +123,62 @@ fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
 ```{r}
 # creating the models
 # Elongation: Logit Normal (LOGITNO)
-mod_elongation <- gamlss(prop_elongated ~ treatment*collection_day + re(random = ~1 | jar_code), family = LOGITNO(), data = polyp_clean, control = gamlss.control(n.cyc = 60))
-histDist(polyp_clean$prop_elongated, "LOGITNO", density = T, main = "Logit Normal")
+mod_elongation <- gamlss(prop_elongated ~ treatment*collection_day 
+                         + re(random = ~1 | jar_code), 
+                         family = LOGITNO(), 
+                         data = polyp_clean, 
+                         control = gamlss.control(n.cyc = 60))
+histDist(polyp_clean$prop_elongated, 
+         "LOGITNO", 
+         density = T, 
+         main = "Logit Normal")
 summary(mod_elongation)
 # p-value = 0.117, so not significant
 
 # Ruffled: Logit Normal (LOGITNO)
-mod_ruffled <- gamlss(prop_ruffled ~ treatment*collection_day + re(random = ~1 | jar_code), family = LOGITNO(), data = polyp_clean, control = gamlss.control(n.cyc = 50))
-histDist(polyp_clean$prop_ruffled, "LOGITNO", density = T, main = "Logit Normal")
+mod_ruffled <- gamlss(prop_ruffled ~ treatment*collection_day 
+                      + re(random = ~1 | jar_code), 
+                      family = LOGITNO(), 
+                      data = polyp_clean, 
+                      control = gamlss.control(n.cyc = 50))
+histDist(polyp_clean$prop_ruffled, 
+         "LOGITNO", 
+         density = T, 
+         main = "Logit Normal")
 summary(mod_ruffled)
 # p-value = 6.99e-05, so significant!
 
-
-
+# Buds: Generalized Beta Type 2 (GB2)
+mod_buds <- gamlss(prop_buds ~ treatment*collection_day 
+                   + random(jar_code), 
+                   family = GB2(), 
+                   data = polyp_clean, 
+                   method = CG(), 
+                   control = gamlss.control(n.cyc = 50))
+histDist(polyp_clean$prop_buds, 
+         "GB2", 
+         density = T, 
+         main = "Generalized Beta Type 2")
+summary(mod_buds)
+# p-value = 0.172, so not significant
 
 # Total: Delaporte (DEL)
-mod_total <- gamlss(total_num ~ treatment*collection_day + re(random = ~1 | jar_code), family = DEL(), data = polyp_clean, control = gamlss.control(n.cyc = 60))
-histDist(polyp_clean$total_num, "DEL", density = T, main = "Delaporte")
+mod_total <- gamlss(total_num ~ treatment*collection_day 
+                    + re(random = ~1 | jar_code), 
+                    family = DEL(), 
+                    data = polyp_clean, 
+                    control = gamlss.control(n.cyc = 60))
+histDist(polyp_clean$total_num,
+         "DEL", 
+         density = T, 
+         main = "Delaporte")
 summary(mod_total)
 # p-value = 0.998, so not significant
+
+```
+
+# ephyra
+```{r}
 
 ```
 
