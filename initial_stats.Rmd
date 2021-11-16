@@ -45,7 +45,8 @@ polyp_clean <- polyp_data %>%
   mutate(prop_elongated = num_elongated/total_num + 0.001, 
          prop_ruffled = num_ruffled/total_num + 0.001, 
          prop_buds = num_asexual_buds/total_num + 0.001,
-         jar_code = as.factor(jar_code))  %>%
+         jar_code = as.factor(jar_code),
+         treatment = as.factor(treatment))  %>%
   dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num) 
 
 ```
@@ -149,7 +150,9 @@ summary(mod_ruffled)
 # p-value = 0.0413, so significant!
 
 # Buds: Generalized Beta Type 2 (GB2)
-mod_buds <- gamlss(prop_buds ~ treatment*collection_day 
+polyp_clean$ordertreatment = ordered(polyp_clean$treatment, levels = c("Control", "Caffeine", "Estradiol", "Combo"))
+polyp_clean$orderT = relevel(polyp_clean$treatment, "Control")
+mod_buds <- gamlss(prop_buds ~ ordertreatment*collection_day 
                    + random(jar_code), 
                    family = GB2(), 
                    data = polyp_clean, 
