@@ -45,8 +45,7 @@ polyp_clean <- polyp_data %>%
   mutate(prop_elongated = num_elongated/total_num + 0.001, 
          prop_ruffled = num_ruffled/total_num + 0.001, 
          prop_buds = num_asexual_buds/total_num + 0.001,
-         jar_code = as.factor(jar_code),
-         treatment = as.factor(treatment))  %>%
+         jar_code = as.factor(jar_code))  %>%
   dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num) 
 
 ```
@@ -56,22 +55,41 @@ polyp_clean <- polyp_data %>%
 elongation_per_day = 
   ggplot(polyp_clean, aes(x=collection_day, y=num_elongated)) +
          geom_point() +
-        geom_smooth(method=lm, se=FALSE)
+        geom_smooth(se=FALSE)
 ruffles_per_day = 
   ggplot(polyp_clean, aes(x=collection_day, y=num_ruffled)) +
          geom_point() +
-        geom_smooth(method=lm, se=FALSE)
+        geom_smooth(se=FALSE)
 asexual_buds_per_day = 
   ggplot(polyp_clean, aes(x=collection_day, y=num_asexual_buds)) +
          geom_point() +
-        geom_smooth(method=lm, se=FALSE)
+        geom_smooth(se=FALSE)
 total_num = 
   ggplot(polyp_clean, aes(x=collection_day, y=total_num)) +
          geom_point() +
-        geom_smooth(method=lm, se=FALSE)
+        geom_smooth(se=FALSE)
 
 (elongation_per_day | ruffles_per_day)/(asexual_buds_per_day | total_num)
 ```
+```{r}
+prop_elongation_per_day = 
+  ggplot(polyp_clean, aes(x=collection_day, y=prop_elongated)) +
+         geom_point() +
+        geom_smooth(se=FALSE)
+prop_ruffles_per_day = 
+  ggplot(polyp_clean, aes(x=collection_day, y=prop_ruffled)) +
+         geom_point() +
+        geom_smooth(se=FALSE)
+prop_buds_per_day = 
+  ggplot(polyp_clean, aes(x=collection_day, y=prop_buds)) +
+         geom_point() +
+        geom_smooth(se=FALSE)
+
+
+
+(prop_elongation_per_day | prop_ruffles_per_day |prop_buds_per_day)
+```
+
 
 ```{r}
 # initial graph of ephyra data to see what it looks like
@@ -80,11 +98,18 @@ ggplot(ephyra_clean, aes(x=collection_day, y=radius, colour=treatment)) +
   geom_smooth(method=lm, se=FALSE)
 ```
 
+
+```{r}
+ggplot(ephyra_clean, aes(x=collection_day, y=num_pulsations, colour=treatment))+
+  geom_point() +
+  geom_smooth(se=FALSE)
+```
+
 ```{r}
 # initial graph of polyp data to see what it looks like
-ggplot(polyp_clean, aes(x=collection_day, y=num_elongated, colour=treatment))+
+ggplot(polyp_clean, aes(x=collection_day, y=prop_ruffled, colour=treatment))+
   geom_point() +
-  geom_smooth(method=lm, se=FALSE)
+  geom_smooth(method=lm,  se=FALSE)
 ```
 
 
@@ -150,9 +175,7 @@ summary(mod_ruffled)
 # p-value = 0.0413, so significant!
 
 # Buds: Generalized Beta Type 2 (GB2)
-polyp_clean$ordertreatment = ordered(polyp_clean$treatment, levels = c("Control", "Caffeine", "Estradiol", "Combo"))
-polyp_clean$orderT = relevel(polyp_clean$treatment, "Control")
-mod_buds <- gamlss(prop_buds ~ ordertreatment*collection_day 
+mod_buds <- gamlss(prop_buds ~ treatment*collection_day 
                    + random(jar_code), 
                    family = GB2(), 
                    data = polyp_clean, 
