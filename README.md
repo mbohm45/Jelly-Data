@@ -8,4 +8,4 @@ All the ephyra died ... (we think a parasite killed them?), so in this repositor
 We built three sets of models for our data (see proportional, count no total and count with total documents) and then picked the most representative model set.
 Then we made some fun graphs :) 
 
-Have fun with our data and feel free to contact us for more info!
+Have fun with our data and feel free to drop any questions or comments in the discussion!
