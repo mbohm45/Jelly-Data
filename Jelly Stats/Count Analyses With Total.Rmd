@@ -1,0 +1,139 @@
+---
+title: "Count Analyses With Total"
+author: "Mara Bohm"
+date: "23/11/2021"
+output: pdf_document
+---
+
+
+# initial setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(patchwork)
+library(car)
+library(performance)
+library(DHARMa)
+library(fitdistrplus)
+library(gamlss)
+library(tidyverse)
+
+polyp_data <-read.csv("Jelly data - Polyps.csv")
+```
+
+
+# fixing polyp data
+
+```{r}
+
+polyp_clean <- polyp_data %>%
+  rename(collection_day = 'Data.collection.day', 
+         jar_code = 'Jar.Code..ex..E1.', 
+         treatment = Chemical, 
+         num_elongated = 'Elongation.', 
+         num_ruffled = 'Ruffled.', 
+         num_asexual_buds = 'Asexual.Repro.', 
+         total_num = Total) %>%
+  mutate(prop_elongated = num_elongated/total_num + 0.001, 
+         prop_ruffled = num_ruffled/total_num + 0.001, 
+         prop_buds = num_asexual_buds/total_num + 0.001,
+         jar_code = as.factor(jar_code),
+         treatment = as.factor(treatment), 
+         treatment = fct_relevel(treatment, "Control", "Caffeine", "Estradiol", "Combo"))  %>%
+  dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num) 
+
+```
+
+
+## fitting distributions for data
+
+```{r}
+
+# elongation: Negative Binomial type II (AIC = 414.587)
+fitDist(num_elongated, data = polyp_clean, type = "counts", try.gamlss = T)
+
+# ruffled: Negative Binomial type II (AIC = 
+fitDist(num_ruffled, data = polyp_clean, type = "counts", try.gamlss = T)
+
+# buds: Negative Binomial type II (AIC = 372.321)
+fitDist(num_asexual_buds, data = polyp_clean, type = "counts", try.gamlss = T)
+
+# total: delaporte (AIC = 436.754)
+fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
+
+```
+
+
+## creating the models WITH total 
+
+```{r}
+# Elongation: Negative Binomial type II (NBII)
+mod_count_elongation <- gamlss(num_elongated ~ treatment*collection_day 
+                         + re(random = ~1 | jar_code)
+                         + re(random = ~1 | total_num),
+                         family = NBII(), 
+                         data = polyp_clean, 
+                         control = gamlss.control(n.cyc = 60))
+histDist(polyp_clean$num_elongated, 
+         "NBII", 
+         density = T, 
+         main = "Count Polyp Elongation Compared to Negative Binomial II Distibution",
+         xlab = "Number Elongated")
+summary(mod_count_elongation)
+# p-value = 
+
+# Ruffled: Negative Binomial type II (NBII)
+mod_count_ruffled <- gamlss(num_ruffled ~ treatment*collection_day 
+                      + re(random = ~1 | jar_code)
+                      + re(random = ~1 | total_num), 
+                      family = NBII(), 
+                      data = polyp_clean, 
+                      control = gamlss.control(n.cyc = 250))
+histDist(polyp_clean$num_ruffled, 
+         "NBII", 
+         density = T, 
+         main = "Count Polyp Ruffling Compared to Negative Binomial II Distibution",
+         xlab = "Number Ruffled")
+summary(mod_count_ruffled)
+# p-value = 
+
+# Buds: Negative Binomial type II (NBII)
+mod_count_buds <- gamlss(num_asexual_buds ~ treatment*collection_day 
+                   + random(jar_code)
+                   + re(random = ~1 | total_num),, 
+                   family = NBII(), 
+                   data = polyp_clean, 
+                   control = gamlss.control(n.cyc = 250))
+histDist(polyp_clean$num_asexual_buds, 
+         "NBII", 
+         density = T, 
+         main = "Count Polyp Budding Compared to Negative Binomial II Distibution",
+         xlab = "Number of Buds")
+summary(mod_count_buds)
+# p-value =
+
+# Total: Delaporte (DEL)
+mod_total <- gamlss(total_num ~ treatment*collection_day 
+                    + re(random = ~1 | jar_code)
+                    + re(random = ~1 | total_num), 
+                    family = DEL(), 
+                    data = polyp_clean, 
+                    control = gamlss.control(n.cyc = 60))
+histDist(polyp_clean$total_num,
+         "DEL", 
+         density = T, 
+         main = "Polyp Total Compared to Delaporte Distribution",
+         xlab = "Polyp Total")
+summary(mod_total)
+# p-value = 
+
+```
+
+# Summary of Count Data With Total:
+
+
+
+
+# GAIC Comparison of With and Without Total
+
+
