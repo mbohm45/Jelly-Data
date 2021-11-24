@@ -147,15 +147,16 @@ Total p-value = 2.33e-08
 # GAIC Comparison of With and Without Total
 
 ```{r}
-# elongation:
-GAIC(mod_countwtotal_elongation, mod_count_elongation, mod_elongation)
+# elongation: AIC values are 2 apart, so effectively the same BUT count with total is slightly lower at 333.33
+GAIC(mod_countwtotal_elongation, mod_count_elongation)
 
-# ruffled:
+# ruffled: AIC values are just over 2 apart, and count with total is lower at 348.9679
 GAIC(mod_countwtotal_ruffled, mod_count_ruffled)
 
-# buds:
+# buds: AIC values are 2 apart, so effectively the same BUT count with total is slightly lower at 293.8201
 GAIC(mod_countwtotal_buds, mod_count_buds)
 
-```
+# therefore, we are including total as a random variable in the models
 
+```
 
