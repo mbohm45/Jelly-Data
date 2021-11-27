@@ -9,12 +9,23 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 library(patchwork)
 library(tidyverse)
-library(viridis)
-library(ggplot2)
 
 #loading in the data
-polyp_data <-read.csv("Analyses/Jelly data - Polyps.csv")
+polyp_data <-read.csv("Jelly data - Polyps.csv")
+ephyra_data <-read.csv("~/Desktop/ADA/Jelly-Data/Data/Jelly data - Ephyra.csv")
 
+# fixing ephyra data
+ephyra_clean <- ephyra_data %>%
+  rename(collection_day = "Data.collection.day",
+         jar_code = "Jar.Code..ex..E1.",
+         num_pulsations = "Number.of.pulsations", 
+         radius = "Radius", 
+         treatment = "Chemical") %>%
+  mutate(jar_code = as.factor(jar_code),
+         treatment = as.factor(treatment), 
+         treatment = fct_relevel(treatment, "Control", "Caffeine", "Estradiol", "Combo")) %>%
+  dplyr::select(collection_day, jar_code, treatment, num_pulsations, radius) %>%
+  na.omit()
 
 # fixing polyp data
 polyp_clean <- polyp_data %>%
@@ -24,182 +35,12 @@ polyp_clean <- polyp_data %>%
          num_elongated = 'Elongation.', 
          num_ruffled = 'Ruffled.', 
          num_asexual_buds = 'Asexual.Repro.', 
-         total_num = Total, 
-         time_in_days = days_after) %>%
+         total_num = Total) %>%
   mutate(prop_elongated = num_elongated/total_num + 0.001, 
          prop_ruffled = num_ruffled/total_num + 0.001, 
          prop_buds = num_asexual_buds/total_num + 0.001,
          jar_code = as.factor(jar_code),
          treatment = as.factor(treatment), 
-         treatment = fct_relevel(treatment, "Control", "Caffeine", "Estradiol", "Combo")) %>%
-  dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num, time_in_days) 
-
-#calculating the average value for each variable on each day, by treatment (ex. avg number of elongated polyps in control treatment on day 3). for plots later. 
-#Standard deviations also  calculated
-averages <- polyp_clean %>%
-  dplyr::select(treatment, time_in_days, num_elongated, num_ruffled, num_asexual_buds, total_num) %>%
-  group_by(treatment, time_in_days) %>% 
-  mutate(avg_ruffled = mean(num_ruffled),
-         sd_ruffled = sd(num_ruffled), 
-         avg_elongated = mean(num_elongated),
-         sd_elongated = sd(num_ruffled),
-         avg_buds = mean(num_asexual_buds),
-         sd_buds =sd(num_asexual_buds),
-         avg_total = mean(total_num), 
-         sd_total = sd(total_num))
-
+         treatment = fct_relevel(treatment, "Control", "Caffeine", "Estradiol", "Combo"))  %>%
+  dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num) 
 ```
-
-## Figures 
-```{r}
-#RUFFLES FIGURE
-#figure for elongation
- ggplot(polyp_clean, aes(x=time_in_days, y=num_ruffled))+
-  geom_point(aes(colour=treatment)) +
-  theme_classic() +
-  geom_smooth(se=TRUE) +
-  #geom_errorbar(aes(ymin= avg_ruffled-sd_ruffled, ymax=avg_ruffled+sd_ruffled, width=0.1, colour=treatment)) +
-  labs(x = "Time (days)", y = "Number of Ruffled Polyps", colour ="Treatment") 
-  #xlim(0, 12)
-
-
-
-
-```
-
-
-```{r}
-ruffles_plot2 <- ggplot(polyp_clean, aes(x=time_in_days, y=num_ruffled, colour=treatment))+
-  geom_point(aes(colour=treatment)) +
-  theme_classic() +
-  geom_smooth(se=FALSE) +
-  #geom_errorbar(aes(ymin= avg_ruffled-sd_ruffled, ymax=avg_ruffled+sd_ruffled, width=0.1, colour=treatment)) +
-  labs(x = "Time (days)", y = "Number of Ruffled Polyps", colour ="Treatment") +
-  scale_colour_manual(values = c('#D44842FF', '#1FA187FF', '#FAC127FF', '#440154FF' )) +
-    scale_x_continuous(breaks=c(0, 3, 6, 9, 12))
-ruffles_plot2
-```
-```{r}
-elongation_plot <- ggplot(polyp_clean, aes(x=time_in_days, y=num_elongated, colour=treatment))+
-  geom_point(aes(colour=treatment)) +
-  theme_classic() +
-  geom_smooth(se=FALSE) +
-  labs(x = "Time (days)", y = "Number of Elongated Polyps", colour ="Treatment") +
-  scale_colour_manual(values = c('#D44842FF', '#1FA187FF', '#FAC127FF', '#440154FF' )) +
-  scale_x_continuous(breaks=c(0, 3, 6, 9, 12))
-  
-elongation_plot
-```
-
-```{r}
-#setting up data frame for ruffled plots
-just_combo_ruf <- polyp_clean %>%
-  filter(treatment == "Combo" | treatment == "Control")
-just_caffeine_ruf <- polyp_clean %>%
-  filter(treatment == "Caffeine" | treatment == "Control")
-```
-
-```{r}
-show_col(viridis_pal(option = "C")(8))
-#color for control: #D44842FF'
-#color for caffeine: '#1FA187FF'
-#color for estrogen: '#FAC127FF'
-#color for combo: '#440154FF'
-c('#D44842FF', '#1FA187FF', '#FAC127FF', '#440154FF' )
-#order of things: Control, Caf, Est, Combo
-#color for total number:
-
-```
-
-
-```{r}
-#ruffled plots
-elongation_plot_all <- ggplot(polyp_clean, aes(x=time_in_days, y=num_elongated, colour=treatment))+
-  geom_point(aes(colour=treatment)) +
-  theme_classic() +
-  geom_smooth(se=FALSE) +
-  #geom_errorbar(aes(ymin= avg_ruffled-sd_ruffled, ymax=avg_ruffled+sd_ruffled, width=0.1, colour=treatment)) +
-  labs(x = "Time (days)", y = "Number of Elongated Polyps", colour ="Treatment") +
-  xlim(0, 12)
-
-elongation_plot_caf <- ggplot(just_caffeine_ruf, aes(x=time_in_days, y=num_elongated, colour=treatment)) +
-  geom_point() +
-  theme_classic() +
-   labs(x = "Time (days)", y = "Number of Elongated Polyps", colour ="Treatment") +
-  geom_smooth(se=FALSE) +
-  scale_colour_manual(values = c('#D44842FF', '#1FA187FF')) +
-  ggtitle( "A") +
-  scale_x_continuous(breaks=c(0, 3, 6, 9, 12)) +
-  ylim(0,30)
-
-
-elongation_plot_combo <- ggplot(just_combo_ruf, aes(x=time_in_days, y=num_elongated, colour=treatment)) +
-  geom_point() +
-  theme_classic() +
-  ylim(0,30)+
-   labs(x = "Time (days)", y = "Number of Elongated Polyps", colour ="Treatment") +
-  geom_smooth(se= FALSE)+
-   scale_colour_manual(values = c('#D44842FF', '#440154FF')) +
-  ggtitle("B") +
-  scale_x_continuous(breaks=c(0, 3, 6, 9, 12))
-  
-
-(elongation_plot_caf | elongation_plot_combo )
-```
-
-##Plot for Dan
-```{r}
-ggplot(polyp_clean, aes( x = as.factor(time_in_days), y = num_elongated, fill=treatment))+
-  geom_boxplot() +
-  theme_classic()
-```
-##Budding
-```{r}
-#setting up data for plots
-just_combo_buds <- polyp_clean %>%
-  filter(treatment == "Combo" | treatment == "Control")
-
-#plotting just combo over time for budding
-buds_plot_combo <- ggplot(just_combo_buds, aes(x=time_in_days, y=num_asexual_buds, colour=treatment)) +
-  geom_point() +
-  theme_classic() +
-   labs(x = "Time (days)", y = "Number of Asexual Buds", colour ="Treatment") +
-  geom_smooth(se= FALSE)+
-   scale_colour_manual(values = c('#D44842FF', '#440154FF')) +
-  scale_x_continuous(breaks=c(0, 3, 6, 9, 12))
-buds_plot_combo
-
-#four line plot
-buds_plot_all <- ggplot(polyp_clean, aes(x=time_in_days, y=num_asexual_buds, colour=treatment))+
-  geom_point(aes(colour=treatment)) +
-  theme_classic() +
-  geom_smooth(se=FALSE) +
-  labs(x = "Time (days)", y = "Number of Asexual Buds", colour ="Treatment") +
-  scale_colour_manual(values = c('#D44842FF', '#1FA187FF', '#FAC127FF', '#440154FF' )) +
-  scale_x_continuous(breaks=c(0, 3, 6, 9, 12))
-buds_plot_all
-```
-##Polyp Total
-```{r}
-#four line plot
-total_plot_all <- ggplot(polyp_clean, aes(x=time_in_days, y=total_num, colour=treatment))+
-  geom_point(aes(colour=treatment)) +
-  theme_classic() +
-  geom_smooth(se=FALSE) +
-  labs(x = "Time (days)", y = "Total Number of Polyps", colour ="Treatment") +
-  scale_colour_manual(values = c('#D44842FF', '#1FA187FF', '#FAC127FF', '#440154FF' )) +
-  scale_x_continuous(breaks=c(0, 3, 6, 9, 12))
-total_plot_all
-
-#one line, all treatments
-total_plot_one <- ggplot(polyp_clean, aes(x=collection_day, y=total_num)) +
-  geom_point() +
-  geom_smooth(se=FALSE) +
-  labs(x = "Time (days)", y = "Total Number of Polyps") +
-  scale_x_continuous(breaks=c(0, 3, 6, 9, 12)) +
-  scale_colour_manual('#5402A3FF') +
-    theme_classic() 
-  
-total_plot_one
-```
-

@@ -1,10 +1,9 @@
 ---
-title: "Count Analyses With Total"
+title: "Time As Factor"
 author: "Mara Bohm"
-date: "23/11/2021"
+date: "26/11/2021"
 output: pdf_document
 ---
-
 
 # initial setup
 
@@ -19,6 +18,7 @@ library(gamlss)
 library(tidyverse)
 
 polyp_data <-read.csv("Jelly data - Polyps.csv")
+polyp_data
 ```
 
 
@@ -38,7 +38,8 @@ polyp_clean <- polyp_data %>%
          prop_ruffled = num_ruffled/total_num + 0.001, 
          prop_buds = num_asexual_buds/total_num + 0.001,
          jar_code = as.factor(jar_code),
-         treatment = as.factor(treatment), 
+         collection_day = as.factor(collection_day),
+         treatment = as.factor(treatment),
          treatment = fct_relevel(treatment, "Control", "Caffeine", "Estradiol", "Combo"))  %>%
   dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num) 
 
@@ -57,10 +58,11 @@ fitDist(num_ruffled, data = polyp_clean, type = "counts", try.gamlss = T)
 
 descdist(polyp_clean$num_ruffled)
 b_NB2 <- histDist(polyp_clean$num_ruffled, "NBII", density = T)
+b_NB1 <- histDist(polyp_clean$num_ruffled, "NBI", density = T)
 b_lNO <- histDist(polyp_clean$num_ruffled, "LOGNO", density = T)
 b_GA <- histDist(polyp_clean$num_ruffled, "GA", density = T)
 b_WEI <- histDist(polyp_clean$num_ruffled, "WEI", density = T)
-GAIC(b_lNO, b_GA, b_WEI, b_NB2)
+GAIC(b_lNO, b_GA, b_WEI, b_NB2, b_NB1)
 
 # buds: Negative Binomial type II (AIC = 372.321)
 fitDist(num_asexual_buds, data = polyp_clean, type = "counts", try.gamlss = T)
@@ -80,7 +82,7 @@ mod_countwtotal_elongation <- gamlss(num_elongated ~ treatment*collection_day
                          + re(random = ~1 | total_num), 
                          family = NBII(), 
                          data = polyp_clean, 
-                         control = gamlss.control(n.cyc = 60))
+                         control = gamlss.control(n.cyc = 100))
 histDist(polyp_clean$num_elongated, 
          "NBII", 
          density = T, 
@@ -158,4 +160,5 @@ GAIC(mod_countwtotal_buds, mod_count_buds)
 # therefore, we are including total as a random variable in the models
 
 ```
+
 
