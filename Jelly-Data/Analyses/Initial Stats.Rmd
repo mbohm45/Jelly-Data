@@ -114,7 +114,8 @@ ggplot(ephyra_clean, aes(x=collection_day, y=num_pulsations, colour=treatment))+
 # initial graph of polyp data to see what it looks like
 ggplot(polyp_clean, aes(x=collection_day, y=prop_ruffled, colour=treatment))+
   geom_point() +
-  geom_smooth(method=lm,  se=FALSE)
+  geom_smooth(method="",  se=FALSE) 
+  
 ```
 
 

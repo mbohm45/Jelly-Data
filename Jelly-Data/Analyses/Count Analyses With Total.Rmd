@@ -39,8 +39,9 @@ polyp_clean <- polyp_data %>%
          prop_buds = num_asexual_buds/total_num + 0.001,
          jar_code = as.factor(jar_code),
          treatment = as.factor(treatment), 
-         treatment = fct_relevel(treatment, "Control", "Caffeine", "Estradiol", "Combo"))  %>%
-  dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num) 
+         treatment = fct_relevel(treatment, "Control", "Caffeine", "Estradiol", "Combo"), 
+         log_elongated = log(num_elongated+1))  %>%
+  dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num, log_elongated) 
 
 ```
 
@@ -69,6 +70,7 @@ fitDist(num_asexual_buds, data = polyp_clean, type = "counts", try.gamlss = T)
 # total: delaporte (AIC = 436.754)
 fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
 
+fitDist(log_elongated, data = polyp_clean, try.gamlss = T)
 ```
 
 
@@ -76,18 +78,22 @@ fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
 
 ```{r}
 # Elongation: Negative Binomial type II (NBII)
+
 mod_countwtotal_elongation <- gamlss(num_elongated ~ treatment*collection_day 
                          + re(random = ~1 | jar_code)
                          + re(random = ~1 | total_num), 
-                         family = NBII(), 
+                         family = NBII(),
+                         method = RS(),
                          data = polyp_clean, 
-                         control = gamlss.control(n.cyc = 60))
+                         control = gamlss.control(n.cyc = 200))
 histDist(polyp_clean$num_elongated, 
          "NBII", 
          density = T, 
          main = "Count Polyp Elongation Compared to Negative Binomial II Distibution",
          xlab = "Number Elongated")
 summary(mod_countwtotal_elongation)
+
+"Our model suggests that caffeine has a statistically signifcant impact on the variation in elongation (p = _____), but collection day does not (p = ____)(Fig. 1, Table S1) "
 # p-value = 0.000269, so significant!
 
 # Ruffled: Weibull (WEI)
@@ -134,6 +140,12 @@ histDist(polyp_clean$total_num,
 summary(mod_total)
 # p-value = 2.33e-08, so significant!
 
+
+histDist(polyp_clean$log_elongated, 
+         "SEP2", 
+         density = T, 
+         main = "Count Polyp Elongation Compared to Skewed Exp II",
+         xlab = "Number Elongated")
 ```
 
 
