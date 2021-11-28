@@ -39,8 +39,9 @@ polyp_clean <- polyp_data %>%
          prop_buds = num_asexual_buds/total_num + 0.001,
          jar_code = as.factor(jar_code),
          treatment = as.factor(treatment), 
-         treatment = fct_relevel(treatment, "Control", "Caffeine", "Estradiol", "Combo"))  %>%
-  dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num) 
+         treatment = fct_relevel(treatment, "Control", "Caffeine", "Estradiol", "Combo"), 
+         log_elongated = log(num_elongated+1))  %>%
+  dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num, log_elongated) 
 
 ```
 
@@ -60,7 +61,8 @@ b_NB2 <- histDist(polyp_clean$num_ruffled, "NBII", density = T)
 b_lNO <- histDist(polyp_clean$num_ruffled, "LOGNO", density = T)
 b_GA <- histDist(polyp_clean$num_ruffled, "GA", density = T)
 b_WEI <- histDist(polyp_clean$num_ruffled, "WEI", density = T)
-GAIC(b_lNO, b_GA, b_WEI, b_NB2)
+# *** b_BE <- histDist(polyp_clean$num_ruffled, "BE", density = T) ***
+GAIC(b_lNO, b_GA, b_WEI, b_NB2) #, ** b_BE **)
 
 # buds: Negative Binomial type II (AIC = 372.321)
 fitDist(num_asexual_buds, data = polyp_clean, type = "counts", try.gamlss = T)
@@ -68,6 +70,7 @@ fitDist(num_asexual_buds, data = polyp_clean, type = "counts", try.gamlss = T)
 # total: delaporte (AIC = 436.754)
 fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
 
+fitDist(log_elongated, data = polyp_clean, try.gamlss = T)
 ```
 
 
@@ -75,19 +78,23 @@ fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
 
 ```{r}
 # Elongation: Negative Binomial type II (NBII)
+
 mod_countwtotal_elongation <- gamlss(num_elongated ~ treatment*collection_day 
                          + re(random = ~1 | jar_code)
                          + re(random = ~1 | total_num), 
-                         family = NBII(), 
+                         family = NBII(),
+                         method = RS(),
                          data = polyp_clean, 
-                         control = gamlss.control(n.cyc = 60))
+                         control = gamlss.control(n.cyc = 200))
 histDist(polyp_clean$num_elongated, 
          "NBII", 
          density = T, 
          main = "Count Polyp Elongation Compared to Negative Binomial II Distibution",
          xlab = "Number Elongated")
 summary(mod_countwtotal_elongation)
-# p-value is significant for collection day (6.74e-05)
+
+
+# p-value = 0.000269, so significant!
 
 # Ruffled: Weibull (WEI)
 mod_countwtotal_ruffled <- gamlss(num_ruffled ~ treatment*collection_day 
@@ -102,7 +109,7 @@ histDist(polyp_clean$num_ruffled,
          main = "Count Polyp Ruffling Compared to Weibull Distribution",
          xlab = "Number Ruffled")
 summary(mod_countwtotal_ruffled)
-# p-value significant for collection day (2.84e-11), caffeine (0.0278) and combo (0.0298)
+# p-value = 1.25e-09, so significant!
 
 # Buds: Negative Binomial type II (NBII)
 mod_countwtotal_buds <- gamlss(num_asexual_buds ~ treatment*collection_day 
@@ -117,7 +124,7 @@ histDist(polyp_clean$num_asexual_buds,
          main = "Count Polyp Budding Compared to Negative Binomial II Distibution",
          xlab = "Number of Buds")
 summary(mod_count_buds)
-# p-value significant for collection day (4.48e-07), combo (0.00201) and combo through time (0.03919)
+# p-value = 0.22110, so not significant
 
 # Total: Delaporte (DEL)
 mod_total <- gamlss(total_num ~ treatment*collection_day 
@@ -131,16 +138,22 @@ histDist(polyp_clean$total_num,
          main = "Count Polyp Total Compared to Delaporte Distribution",
          xlab = "Number Polyps Total")
 summary(mod_total)
-# p-value significant for collection day (0.0111)
+# p-value = 2.33e-08, so significant!
 
+
+histDist(polyp_clean$log_elongated, 
+         "SEP2", 
+         density = T, 
+         main = "Count Polyp Elongation Compared to Skewed Exp II",
+         xlab = "Number Elongated")
 ```
 
 
 # Summary of Count Data With Total:
-Elongation = collection day (6.74e-05)
-Ruffled = collection day (2.84e-11), caffeine (0.0278) and combo (0.0298)
-Buds = collection day (4.48e-07), combo (0.00201) and combo through time (0.03919)
-Total = collection day (0.0111)
+Elongation p-value = 0.000269
+Ruffled p-value = 1.25e-09
+Buds p-value = 0.22110
+Total p-value = 2.33e-08
 
 
 # GAIC Comparison of With and Without Total
