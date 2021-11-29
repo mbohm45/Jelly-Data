@@ -123,7 +123,7 @@ histDist(polyp_clean$num_asexual_buds,
          density = T, 
          main = "Count Polyp Budding Compared to Negative Binomial II Distibution",
          xlab = "Number of Buds")
-summary(mod_count_buds)
+summary(mod_countwtotal_buds)
 # p-value = 0.22110, so not significant
 
 # Total: Delaporte (DEL)
