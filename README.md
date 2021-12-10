@@ -7,7 +7,7 @@ We drugged our jellies with estradiol, caffiene or both for 12 days and measured
 In this repository you will find folders named:
   1. Analyses, containing all the code necessary to run the analyses that we completed on our data. 
   2. Data, containing all the data we collected.
-  3. Paper, the report that we submitted as part of this course.
+  3. Paper, containing the report that we submitted as part of this course.
   4. Results, containing the code necessary to create the figures that we used to visualize our results in the paper, as well as summary tables.
 
 
