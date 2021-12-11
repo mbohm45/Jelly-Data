@@ -1,0 +1,174 @@
+---
+title: "Count Analyses With Total"
+author: "Mara Bohm"
+date: "23/11/2021"
+output: pdf_document
+---
+
+
+# initial setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(patchwork)
+library(car)
+library(performance)
+library(DHARMa)
+library(fitdistrplus)
+library(gamlss)
+library(tidyverse)
+
+polyp_data <-read.csv("Jelly data - Polyps.csv")
+```
+
+
+# fixing polyp data
+
+```{r}
+
+polyp_clean <- polyp_data %>%
+  rename(collection_day = 'Data.collection.day', 
+         jar_code = 'Jar.Code..ex..E1.', 
+         treatment = Chemical, 
+         num_elongated = 'Elongation.', 
+         num_ruffled = 'Ruffled.', 
+         num_asexual_buds = 'Asexual.Repro.', 
+         total_num = Total) %>%
+  mutate(prop_elongated = num_elongated/total_num + 0.001, 
+         prop_ruffled = num_ruffled/total_num + 0.001, 
+         prop_buds = num_asexual_buds/total_num + 0.001,
+         jar_code = as.factor(jar_code),
+         treatment = as.factor(treatment), 
+         treatment = fct_relevel(treatment, "Control", "Caffeine", "Estradiol", "Combo"), 
+         log_elongated = log(num_elongated+1))  %>%
+  dplyr::select(collection_day, jar_code, treatment, num_elongated, prop_elongated, num_ruffled, prop_ruffled, num_asexual_buds, prop_buds, total_num, log_elongated) 
+
+```
+
+
+## fitting distributions for data
+
+```{r}
+
+# elongation: Negative Binomial type II (AIC = 414.587)
+fitDist(num_elongated, data = polyp_clean, type = "counts", try.gamlss = T)
+
+# ruffled: Weibull Distribution (AIC = 442.8371)
+fitDist(num_ruffled, data = polyp_clean, type = "counts", try.gamlss = T)
+
+descdist(polyp_clean$num_ruffled)
+b_NB2 <- histDist(polyp_clean$num_ruffled, "NBII", density = T)
+b_lNO <- histDist(polyp_clean$num_ruffled, "LOGNO", density = T)
+b_GA <- histDist(polyp_clean$num_ruffled, "GA", density = T)
+b_WEI <- histDist(polyp_clean$num_ruffled, "WEI", density = T)
+# *** b_BE <- histDist(polyp_clean$num_ruffled, "BE", density = T) ***
+GAIC(b_lNO, b_GA, b_WEI, b_NB2) #, ** b_BE **)
+
+# buds: Negative Binomial type II (AIC = 372.321)
+fitDist(num_asexual_buds, data = polyp_clean, type = "counts", try.gamlss = T)
+
+# total: delaporte (AIC = 436.754)
+fitDist(total_num, data = polyp_clean, type = "counts", try.gamlss = T)
+
+fitDist(log_elongated, data = polyp_clean, try.gamlss = T)
+```
+
+
+## creating the models with total
+
+```{r}
+# Elongation: Negative Binomial type II (NBII)
+
+mod_countwtotal_elongation <- gamlss(num_elongated ~ treatment*collection_day 
+                         + re(random = ~1 | jar_code)
+                         + re(random = ~1 | total_num), 
+                         family = NBII(),
+                         method = RS(),
+                         data = polyp_clean, 
+                         control = gamlss.control(n.cyc = 200))
+histDist(polyp_clean$num_elongated, 
+         "NBII", 
+         density = T, 
+         main = "Count Polyp Elongation Compared to Negative Binomial II Distibution",
+         xlab = "Number Elongated")
+summary(mod_countwtotal_elongation)
+
+
+# p-value = 0.000269, so significant!
+
+# Ruffled: Weibull (WEI)
+mod_countwtotal_ruffled <- gamlss(num_ruffled ~ treatment*collection_day 
+                      + re(random = ~1 | jar_code)
+                      + re(random = ~1 | total_num), 
+                      family = WEI(), 
+                      data = polyp_clean, 
+                      control = gamlss.control(n.cyc = 60))
+histDist(polyp_clean$num_ruffled, 
+         "WEI", 
+         density = T, 
+         main = "Count Polyp Ruffling Compared to Weibull Distribution",
+         xlab = "Number Ruffled")
+summary(mod_countwtotal_ruffled)
+# p-value = 1.25e-09, so significant!
+
+# Buds: Negative Binomial type II (NBII)
+mod_countwtotal_buds <- gamlss(num_asexual_buds ~ treatment*collection_day 
+                   + re(random = ~1 | jar_code)
+                   + re(random = ~1 | total_num), 
+                   family = NBII(), 
+                   data = polyp_clean, 
+                   control = gamlss.control(n.cyc = 250))
+histDist(polyp_clean$num_asexual_buds, 
+         "NBII", 
+         density = T, 
+         main = "Count Polyp Budding Compared to Negative Binomial II Distibution",
+         xlab = "Number of Buds")
+summary(mod_countwtotal_buds)
+# p-value = 0.22110, so not significant
+
+# Total: Delaporte (DEL)
+mod_total <- gamlss(total_num ~ treatment*collection_day 
+                    + re(random = ~1 | jar_code), 
+                    family = DEL(), 
+                    data = polyp_clean, 
+                    control = gamlss.control(n.cyc = 60))
+histDist(polyp_clean$total_num,
+         "DEL", 
+         density = T, 
+         main = "Count Polyp Total Compared to Delaporte Distribution",
+         xlab = "Number Polyps Total")
+summary(mod_total)
+# p-value = 2.33e-08, so significant!
+
+
+histDist(polyp_clean$log_elongated, 
+         "SEP2", 
+         density = T, 
+         main = "Count Polyp Elongation Compared to Skewed Exp II",
+         xlab = "Number Elongated")
+```
+
+
+# Summary of Count Data With Total:
+Elongation p-value = 0.000269
+Ruffled p-value = 1.25e-09
+Buds p-value = 0.22110
+Total p-value = 2.33e-08
+
+
+# GAIC Comparison of With and Without Total
+
+```{r}
+# elongation: AIC values are 2 apart, so effectively the same BUT count with total is slightly lower at 333.33
+GAIC(mod_countwtotal_elongation, mod_count_elongation)
+
+# ruffled: AIC values are just over 2 apart, and count with total is lower at 348.9679
+GAIC(mod_countwtotal_ruffled, mod_count_ruffled)
+
+# buds: AIC values are 2 apart, so effectively the same BUT count with total is slightly lower at 293.8201
+GAIC(mod_countwtotal_buds, mod_count_buds)
+
+# therefore, we are including total as a random variable in the models
+
+```
+
