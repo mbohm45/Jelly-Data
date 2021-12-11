@@ -1,6 +1,6 @@
 ---
-title: "Count Analyses With Total"
-author: "Mara Bohm"
+title: "DS 2021 Jelly Analyses"
+author: "Mara Bohm and Naomi Lubkin"
 date: "23/11/2021"
 output: pdf_document
 ---
@@ -58,19 +58,20 @@ polyp_clean <- polyp_data %>%
 # Polyp Elongation
 
 ### Step 1: Fitting Distributions for Elongation Data
-```{r, results=FALSE, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE}
 fitDist(num_elongated, 
         data = polyp_clean, 
         type = "counts", 
         try.gamlss = T)
 # best fit: Negative Binomial type II (AIC = 414.587)
 ```
-```{r, message=FALSE, warning=FALSE}
+```{r, results=FALSE, message=FALSE, warning=FALSE}
 # visualizing this fit
 histDist(polyp_clean$num_elongated, 
          "NBII", 
          density = T, 
-         main = "Count Polyp Elongation Compared to Negative Binomial II Distibution",
+         main = "Count Polyp Elongation  
+         Compared to Negative Binomial II Distibution",
          xlab = "Number Elongated")
 ```
 
@@ -97,7 +98,7 @@ summary(mod_countwtotal_elongation)
 # Polyp Ruffling
 
 ### Step 1: Fitting Distributions for Ruffling Data
-```{r, results=FALSE, message=FALSE, warning=FALSE}
+```{r, results=FALSE, fig.show='hide', message=FALSE, warning=FALSE}
 
 fitDist(num_ruffled, 
         data = polyp_clean, 
@@ -122,11 +123,13 @@ b_GA <- histDist(polyp_clean$num_ruffled,
 b_WEI <- histDist(polyp_clean$num_ruffled, 
                   "WEI", 
                   density = T)
+```
+```{r, message=FALSE, warning=FALSE}
 GAIC(b_lNO,
      b_GA, 
      b_WEI, 
      b_NB2)
-# best fit: Weibull Distribution (AIC = 442.8371)
+# best fit: Weibull Distribution (AIC = 442.837)
 
 ```
 ```{r, message=FALSE, warning=FALSE}
@@ -134,13 +137,14 @@ GAIC(b_lNO,
 histDist(polyp_clean$num_ruffled, 
          "WEI", 
          density = T, 
-         main = "Count Polyp Ruffling Compared to Weibull Distribution",
+         main = "Count Polyp Ruffling  
+         Compared to Weibull Distribution",
          xlab = "Number Ruffled")
 
 ```
 
 ### Step 2: Building the Model
-```{r, message=FALSE, warning=FALSE}
+```{r, results=FALSE, message=FALSE, warning=FALSE}
 mod_countwtotal_ruffled <- gamlss(num_ruffled ~ treatment*collection_day 
                       + re(random = ~1 | jar_code)
                       + re(random = ~1 | total_num), 
@@ -161,24 +165,25 @@ summary(mod_countwtotal_elongation)
 
 ### Step 1: Fitting Distributions for Buds Data
 
-```{r, results=FALSE, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE}
 fitDist(num_asexual_buds, 
         data = polyp_clean, 
         type = "counts", 
         try.gamlss = T)
 # best fit: Negative Binomial type II (AIC = 372.321)
 ```
-```{r, message=FALSE, warning=FALSE}
+```{r, results=FALSE, message=FALSE, warning=FALSE}
 # visualizing this fit
 histDist(polyp_clean$num_asexual_buds, 
          "NBII", 
          density = T, 
-         main = "Count Polyp Budding Compared to Negative Binomial II Distibution",
+         main = "Count Polyp Budding  
+         Compared to Negative Binomial II Distibution",
          xlab = "Number of Buds")
 ```
 
 ### Step 2: Building the Model
-```{r, message=FALSE, warning=FALSE}
+```{r, results=FALSE, message=FALSE, warning=FALSE}
 mod_countwtotal_buds <- gamlss(num_asexual_buds ~ treatment*collection_day 
                    + re(random = ~1 | jar_code)
                    + re(random = ~1 | total_num), 
@@ -199,24 +204,25 @@ summary(mod_countwtotal_buds)
 
 ### Step 1: Fitting Distributions for Total Data
 
-```{r, results=FALSE, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE}
 fitDist(total_num, 
         data = polyp_clean, 
         type = "counts", 
         try.gamlss = T)
 # best fit: delaporte (AIC = 436.754)
 ```
-```{r, message=FALSE, warning=FALSE}
+```{r, results=FALSE, message=FALSE, warning=FALSE}
 # visualizing this fit
 histDist(polyp_clean$total_num,
          "DEL", 
          density = T, 
-         main = "Count Polyp Total Compared to Delaporte Distribution",
+         main = "Count Polyp Total  
+         Compared to Delaporte Distribution",
          xlab = "Number Polyps Total")
 ```
 
 ### Step 2: Building the Model
-```{r, message=FALSE, warning=FALSE}
+```{r, results=FALSE, message=FALSE, warning=FALSE}
 mod_total <- gamlss(total_num ~ treatment*collection_day 
                     + re(random = ~1 | jar_code), 
                     family = DEL(), 
