@@ -1,0 +1,286 @@
+---
+title: "DS 2021 Jelly Analyses"
+author: "Mara Bohm and Naomi Lubkin"
+date: "15/12/2021"
+output: pdf_document
+---
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=70), tidy=TRUE)
+# code above ensures no text is cut off when knit
+```
+
+# Loading In Packages and Data
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+library(patchwork)
+library(car)
+library(performance)
+library(DHARMa)
+library(fitdistrplus)
+library(gamlss)
+library(tidyverse)
+
+polyp_data <- read_csv("/Users/marabohm/Github/Jelly-Data/data/ds2021_polyp_data.csv")
+
+```
+
+
+# Cleaning the Data
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+
+polyp_clean <- polyp_data %>%
+  rename(collection_day = 'Data collection day', 
+         jar_code = 'Jar Code (ex. E1)', 
+         treatment = Chemical, 
+         num_elongated = 'Elongation?', 
+         num_ruffled = 'Ruffled?', 
+         num_asexual_buds = 'Asexual Repro?', 
+         total_num = Total) %>%
+  mutate(jar_code = as.factor(jar_code),
+         treatment = as.factor(treatment), 
+         treatment = fct_relevel(treatment, 
+                                 "Control", 
+                                 "Caffeine", 
+                                 "Estradiol", 
+                                 "Combo"))  %>%
+  dplyr::select(collection_day, 
+                jar_code, 
+                treatment, 
+                num_elongated, 
+                num_ruffled, 
+                num_asexual_buds, 
+                total_num) 
+
+```
+
+
+# Polyp Elongation
+
+### Step 1: Fitting Distributions for Elongation Data
+```{r, message=FALSE, warning=FALSE}
+fitDist(num_elongated, 
+        data = polyp_clean, 
+        type = "counts", 
+        try.gamlss = T)
+# best fit: Negative Binomial type II (AIC = 414.587)
+```
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+# visualizing this fit
+histDist(polyp_clean$num_elongated, 
+         "NBII", 
+         density = T, 
+         main = "Count Polyp Elongation  
+         Compared to Negative Binomial II Distibution",
+         xlab = "Number Elongated")
+```
+
+### Step 2: Building the Model
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+mod_countwtotal_elongation <- gamlss(num_elongated ~ treatment*collection_day 
+                         + re(random = ~1 | jar_code)
+                         + re(random = ~1 | total_num), 
+                         family = NBII(),
+                         method = RS(),
+                         data = polyp_clean, 
+                         control = gamlss.control(n.cyc = 200))
+
+```
+
+### Step 3: Summarizing the Model
+```{r, message=FALSE, warning=FALSE}
+
+summary(mod_countwtotal_elongation)
+
+```
+
+
+# Polyp Ruffling
+
+### Step 1: Fitting Distributions for Ruffling Data
+```{r, results=FALSE, fig.show='hide', message=FALSE, warning=FALSE}
+
+fitDist(num_ruffled, 
+        data = polyp_clean, 
+        type = "counts", 
+        try.gamlss = T)
+# best fit: Negative Binomial type II (AIC = 444.109)
+
+# model was having difficulty converging with NBII, so tried some other fits:
+
+descdist(polyp_clean$num_ruffled)
+# Cullen and Frey plot indicates Lognormal, Gamma and Weibull distributions may be a good fit, so we compare to each other using Generalized AIC:
+
+b_NB2 <- histDist(polyp_clean$num_ruffled, 
+                  "NBII", 
+                  density = T)
+b_lNO <- histDist(polyp_clean$num_ruffled, 
+                  "LOGNO", 
+                  density = T)
+b_GA <- histDist(polyp_clean$num_ruffled, 
+                 "GA", 
+                 density = T)
+b_WEI <- histDist(polyp_clean$num_ruffled, 
+                  "WEI", 
+                  density = T)
+```
+```{r, message=FALSE, warning=FALSE}
+GAIC(b_lNO,
+     b_GA, 
+     b_WEI, 
+     b_NB2)
+# best fit: Weibull Distribution (AIC = 442.837)
+
+```
+```{r, message=FALSE, warning=FALSE}
+# visualizing this fit
+histDist(polyp_clean$num_ruffled, 
+         "WEI", 
+         density = T, 
+         main = "Count Polyp Ruffling  
+         Compared to Weibull Distribution",
+         xlab = "Number Ruffled")
+
+```
+
+### Step 2: Building the Model
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+mod_countwtotal_ruffled <- gamlss(num_ruffled ~ treatment*collection_day 
+                      + re(random = ~1 | jar_code)
+                      + re(random = ~1 | total_num), 
+                      family = WEI(), 
+                      data = polyp_clean, 
+                      control = gamlss.control(n.cyc = 60))
+
+```
+
+### Step 3: Summarizing the Model
+```{r, message=FALSE, warning=FALSE}
+
+summary(mod_countwtotal_elongation)
+
+```
+
+# Polyp Asexual Budding
+
+### Step 1: Fitting Distributions for Buds Data
+
+```{r, message=FALSE, warning=FALSE}
+fitDist(num_asexual_buds, 
+        data = polyp_clean, 
+        type = "counts", 
+        try.gamlss = T)
+# best fit: Negative Binomial type II (AIC = 372.321)
+```
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+# visualizing this fit
+histDist(polyp_clean$num_asexual_buds, 
+         "NBII", 
+         density = T, 
+         main = "Count Polyp Budding  
+         Compared to Negative Binomial II Distibution",
+         xlab = "Number of Buds")
+```
+
+### Step 2: Building the Model
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+mod_countwtotal_buds <- gamlss(num_asexual_buds ~ treatment*collection_day 
+                   + re(random = ~1 | jar_code)
+                   + re(random = ~1 | total_num), 
+                   family = NBII(), 
+                   data = polyp_clean, 
+                   control = gamlss.control(n.cyc = 250))
+
+```
+
+### Step 3: Summarizing the Model
+```{r, message=FALSE, warning=FALSE}
+
+summary(mod_countwtotal_buds)
+
+```
+
+# Polyp Total Number
+
+### Step 1: Fitting Distributions for Total Data
+
+```{r, message=FALSE, warning=FALSE}
+fitDist(total_num, 
+        data = polyp_clean, 
+        type = "counts", 
+        try.gamlss = T)
+# best fit: delaporte (AIC = 436.754)
+```
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+# visualizing this fit
+histDist(polyp_clean$total_num,
+         "DEL", 
+         density = T, 
+         main = "Count Polyp Total  
+         Compared to Delaporte Distribution",
+         xlab = "Number Polyps Total")
+```
+
+### Step 2: Building the Model
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+mod_total <- gamlss(total_num ~ treatment*collection_day 
+                    + re(random = ~1 | jar_code), 
+                    family = DEL(), 
+                    data = polyp_clean, 
+                    control = gamlss.control(n.cyc = 60))
+
+```
+
+### Step 3: Summarizing the Model
+```{r, message=FALSE, warning=FALSE}
+
+summary(mod_total)
+
+```
+
+# Is There A Difference Between Caffeine and Combo in Ruffling?
+
+### Step 1: Reordering Ruffling Data To Compare to Caffeine
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+
+ruffledcomparisons_data <- polyp_data %>%
+  rename(collection_day = 'Data collection day', 
+         jar_code = 'Jar Code (ex. E1)', 
+         treatment = Chemical, 
+         num_elongated = 'Elongation?', 
+         num_ruffled = 'Ruffled?', 
+         num_asexual_buds = 'Asexual Repro?', 
+         total_num = Total) %>%
+  mutate(jar_code = as.factor(jar_code),
+         treatment = as.factor(treatment)) %>%
+  dplyr::select(collection_day, 
+                jar_code, 
+                treatment, 
+                num_elongated, 
+                num_ruffled, 
+                num_asexual_buds, 
+                total_num) 
+
+```
+
+
+### Step 2: Building the Reordered Ruffled Model
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+mod_countwtotal_ruffled_reordered <- gamlss(num_ruffled ~ treatment*collection_day 
+                   + re(random = ~1 | jar_code)
+                   + re(random = ~1 | total_num), 
+                   family = WEI(), 
+                   data = ruffledcomparisons_data, 
+                   control = gamlss.control(n.cyc = 250))
+
+```
+
+
+### Step 3: Summarizing the Model
+```{r, message=FALSE, warning=FALSE}
+
+summary(mod_countwtotal_ruffled_reordered)
+
+```
+

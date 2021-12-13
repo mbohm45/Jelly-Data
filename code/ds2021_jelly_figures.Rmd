@@ -1,0 +1,358 @@
+---
+title: "DS 2021 Jelly Figures"
+author: "Naomi Lubkin and Mara Bohm"
+date: "15/12/2021"
+output: pdf_document
+---
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=70), tidy=TRUE)
+# code above ensures no text is cut off when knit
+```
+
+# Loading In Packages and Data
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+library(patchwork)
+library(car)
+library(performance)
+library(DHARMa)
+library(fitdistrplus)
+library(gamlss)
+library(tidyverse)
+
+polyp_data <- read_csv("/Users/marabohm/Github/Jelly-Data/data/ds2021_polyp_data.csv")
+
+```
+
+
+# Cleaning the Data
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+
+polyp_clean <- polyp_data %>%
+  rename(collection_day = 'Data collection day', 
+         jar_code = 'Jar Code (ex. E1)', 
+         treatment = Chemical, 
+         num_elongated = 'Elongation?', 
+         num_ruffled = 'Ruffled?', 
+         num_asexual_buds = 'Asexual Repro?', 
+         total_num = Total,
+         time_in_days = days_after) %>%
+  mutate(jar_code = as.factor(jar_code),
+         treatment = as.factor(treatment), 
+         treatment = fct_relevel(treatment, 
+                                 "Control", 
+                                 "Caffeine", 
+                                 "Estradiol", 
+                                 "Combo"))  %>%
+  dplyr::select(collection_day, 
+                jar_code, 
+                treatment, 
+                num_elongated, 
+                num_ruffled, 
+                num_asexual_buds, 
+                total_num,
+                time_in_days) 
+
+```
+
+# Making Single Treatment Data Frames for Later Analyses
+
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+
+# data frame with only control
+only_control <- polyp_clean %>%
+  filter(treatment == "Control")
+
+# data frame with only caffeine
+only_caf <- polyp_clean %>%
+  filter(treatment == "Caffeine")
+
+# data frame with only estradiol
+only_est <- polyp_clean %>%
+  filter(treatment == "Estradiol")
+
+# data frame with only combination
+only_combo <- polyp_clean %>%
+  filter(treatment == "Combination")
+
+# data frame with caffeine and control
+just_caf <- polyp_clean %>%
+  filter(treatment == "Caffeine" | treatment == "Control")
+
+# data frame with combination and control
+just_combo <- polyp_clean %>%
+  filter(treatment == "Combination" | treatment == "Control")
+
+# data frame with caffeine, combination, and control
+just_caf_combo <- polyp_clean %>%
+  filter(treatment == "Combination" | treatment == "Control" | treatment == "Caffeine")
+
+```
+
+# Figure 1: Response Variables Over Time
+
+### Figure 1A: Ruffled Polyps Over Time
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+
+ruffles_time <- ggplot(polyp_clean, aes(x=time_in_days,  y=num_ruffled)) +
+  geom_point(colour="#fb9b06") +
+  geom_smooth(method = "lm", se=FALSE, colour="black", show.legend=FALSE) +
+  labs(x = "Time (days)", y = "Number of Ruffled Polyps") +
+  scale_x_continuous(breaks=c(0, 3, 6, 9, 12)) +
+  theme_classic() +
+    theme(legend.position = "none") +
+  ggtitle("A. Ruffling") 
+  
+# Spearman's rank correlation coefficient for the correlation between the number  of ruffled polyps and time
+cor(polyp_clean$time_in_days, polyp_clean$num_ruffled, method = "spearman")
+
+```
+
+### Figure 1B: Elongated Polyps Over Time
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+
+elo_time <- ggplot(polyp_clean, aes(x=time_in_days,  y=num_elongated)) +
+  geom_point(colour="#e55c30") +
+  geom_smooth(method = "lm", se=FALSE, colour="black", show.legend=FALSE) +
+  labs(x = "Time (days)", 
+       y = "Number of Elongated Polyps") +
+  scale_x_continuous(breaks=c(0, 3, 6, 9, 12)) +
+  theme_classic() +
+    theme(legend.position = "none") +
+  ggtitle("B. Elongation") 
+  
+# Spearman's rank correlation coefficient for the correlation between the number  of elongated polyps and time
+cor(polyp_clean$time_in_days,polyp_clean$num_elongated, method= "spearman")
+
+```
+
+### Figure 1C: Asexual Buds Over Time
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+
+buds_time <- ggplot(polyp_clean, aes(x=time_in_days,  y=num_asexual_buds)) +
+  geom_point(colour="#450a69") +
+  geom_smooth(method = "lm", se=FALSE, colour="black", show.legend=FALSE) +
+  labs(x = "Time (days)", y = "Number of Asexual Buds") +
+  scale_x_continuous(breaks=c(0, 3, 6, 9, 12)) +
+  theme_classic() +
+    theme(legend.position = "none") +
+  ggtitle("C. Budding") 
+  
+# Spearman's rank correlation coefficient for the correlation between number of   asexual buds and time 
+cor(polyp_clean$time_in_days,polyp_clean$num_asexual_buds, method= "spearman")
+
+```
+
+### Figure 1D: Total Number of Polyps Over Time
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+
+total_time <- ggplot(polyp_clean, aes(x=time_in_days,  y=total_num)) +
+  geom_point(colour="#b1325a") +
+  geom_smooth(method = "lm", se=FALSE, colour="black", show.legend=FALSE) +
+  labs(x = "Time (days)", y = "Total Number of Polyps") +
+  scale_x_continuous(breaks=c(0, 3, 6, 9, 12))+
+  theme_classic() +
+    theme(legend.position = "none") +
+  ggtitle("D. Total Number") 
+  
+# Spearman's rank correlation coefficient for the correlation between total number   of polyps and time 
+cor(polyp_clean$time_in_days,polyp_clean$total_num, method= "spearman")
+
+```
+
+### Merging The Four Graphs Into One Figure Through Patchwork
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+
+(ruffles_time | elo_time)/(buds_time | total_time)
+
+```
+
+# Figure 2: Ruffling In Each Treatment
+
+### Building a Box Plot For Control, Caffeine, Estradiol and Combination with Time as a Factor
+```{r, message=FALSE, warning=FALSE}
+
+box_caf_combo<- ggplot(just_caf_combo, aes(  x = as.factor(time_in_days), y = num_ruffled, fill=treatment))+
+  geom_boxplot() +
+  theme_classic() +
+  scale_fill_manual(values = c("#404788FF", "#238A8DFF","#55C667FF")) +
+  labs(x = "Time (days)", y = "Number of Ruffled Polyps", fill ="Treatment") 
+box_caf_combo
+
+```
+
+
+# Figure 3: Elongation per treatment and over time
+
+# Figure 3A: Box Plot of Overall Elongation per Treatment
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+
+box_elongation <- ggplot(polyp_clean, aes(x=treatment, y=num_elongated, fill = treatment)) +
+  geom_boxplot() +
+  theme_classic() +
+  scale_fill_manual(values = c("#404788FF", "#238A8DFF", "#FDE725FF","#55C667FF")) +
+  labs(x = "Treatment", y = "Number of Elongated Polyps") +
+  theme(legend.position = "none", axis.text.x = element_text(angle=30, vjust = 0.8, hjust = 0.7)) +
+  ggtitle("A")
+box_elongation
+
+```
+
+### Figure 3B: Scatter/Line Plot of the Number of Elongated Polpys over Time, Per Treatment
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+
+plot_elongation <- ggplot(polyp_clean, 
+                          aes(x=time_in_days, 
+                              y=num_elongated, 
+                              colour=treatment, 
+                              shape = treatment))+
+  geom_point(aes(x=time_in_days, 
+                 y=num_elongated, 
+                 colour=treatment, 
+                 shape = treatment)) +
+  theme_classic() +
+  geom_smooth(se=FALSE, method="lm") +
+  labs(x = "Time (days)", 
+       y = "Number of Elongated Polyps", 
+       colour ="Treatment", 
+       shape = NULL) +
+  scale_colour_manual(name = "Treatment", 
+                      labels= c("Control", 
+                                "Caffeine", 
+                                "Estradiol", 
+                                "Combination"), 
+                      values = c("#404788FF", 
+                                 "#238A8DFF",  
+                                 "#FDE725FF",
+                                 "#55C667FF")) +
+  scale_shape_manual(name = "Treatment", 
+                     labels= c("Control", 
+                               "Caffeine", 
+                               "Estradiol", 
+                               "Combination"), 
+                     values = c(15,19,17,8)) +
+  scale_x_continuous(breaks=c(0, 3, 6, 9, 12)) +
+  ggtitle("B")
+
+
+# Spearman's Rank Correlation Coefficient for Correlation Between Number of   Elongated Polyps and Time in Each Treatment
+
+# control: 
+cor(only_control$time_in_days,only_control$num_elongated, method= "spearman")
+
+# caffeine: 
+cor(only_caf$time_in_days,only_caf$num_elongated, method= "spearman")
+
+# estradiol: 
+cor(only_est$time_in_days,only_est$num_elongated, method= "spearman")
+
+# combination: 
+cor(only_combo$time_in_days,only_combo$num_elongated, method= "spearman")
+
+```
+  
+### Merging The Two Graphs Into One Figure Through Patchwork
+
+```{r, message=FALSE, warning=FALSE}
+
+(box_elongation | plot_elongation)
+
+```
+
+# Figure 4: Budding in the Control and Combination Treatments
+
+### Figure 4A: Box Plot of Overall Budding in Control and Combo
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+
+box_buds <-ggplot(just_combo, aes(x=treatment, y=num_asexual_buds, fill = treatment)) +
+  geom_boxplot() +
+  theme_classic() +
+  scale_fill_manual(values = c("#404788FF", "#55C667FF")) +
+  labs(x = "Treatment", y = "Number of Asexual Buds") +
+  theme(legend.position = "none")  +
+   ggtitle("A")
+
+```
+
+### Figure 4B: Scatter/Line Plot of Budding in Control and Combination over Time
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+
+plot_buds <- ggplot(just_combo, aes(x=time_in_days, y=num_asexual_buds, colour=treatment, shape = treatment)) +
+  geom_point() +
+  theme_classic() +
+   labs(x = "Time (days)", y = "Number of Asexual Buds", colour ="Treatment") +
+  geom_smooth(se= FALSE, method="lm")+
+   scale_colour_manual(name = "Treatment", labels= c("Control", "Combination"), values = c("#404788FF", "#55C667FF")) +
+  scale_shape_manual(name = "Treatment", labels= c("Control", "Combination"), values = c(15,8)) +
+  scale_x_continuous(breaks=c(0, 3, 6, 9, 12)) +
+  ggtitle("B")
+  
+#Spearman's rank correlation coefficient for the correlation between number of  asexual buds and time in each treatment 
+
+# control: 
+cor(only_control$time_in_days, only_control$num_asexual_buds, method= "spearman")
+
+# combination: 
+cor(only_combo$time_in_days, only_combo$num_asexual_buds, method= "spearman")
+
+```
+
+### Merging The Two Graphs Into One Figure Through Patchwork
+
+```{r, message=FALSE, warning=FALSE}
+
+(box_buds | plot_buds)
+
+```
+
+# Figure 4: Total Number of Polyps
+
+### Figure 4A: Box Plot for Overall Total Number of Polyps by Treatment
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+
+box_total <- ggplot(polyp_clean, aes(x=treatment, y=total_num, fill = treatment)) +
+  geom_boxplot() +
+  theme_classic() +
+  scale_fill_manual(values = c("#404788FF", "#238A8DFF", "#FDE725FF","#55C667FF")) +
+  labs(x = "Treatment", y = "Total Number of  Polyps") +
+  theme(legend.position = "none", axis.text.x = element_text(angle=30, vjust = 0.8, hjust = 0.7)) + 
+  ggtitle("A")
+
+```  
+
+### Figure 4B: Scatter/Line Plot of Total Number of Polyps Over Time, Broken Up By Treatment
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+
+plot_total <- ggplot(polyp_clean, aes(x=time_in_days, y=total_num, colour=treatment, shape = treatment))+
+  geom_point(aes(colour=treatment)) +
+  theme_classic() +
+  geom_smooth(se=FALSE, method="lm") +
+  labs(x = "Time (days)", y = "Total Number of Polyps", colour ="Treatment") +
+  scale_colour_manual(name = "Treatment", labels= c("Control", "Caffeine", "Estradiol", "Combination"), values = c("#404788FF", "#238A8DFF",  "#FDE725FF","#55C667FF")) +
+  scale_shape_manual(name = "Treatment", labels= c("Control", "Caffeine", "Estradiol", "Combination"), values = c(15,19,17,8)) +
+  scale_x_continuous(breaks=c(0, 3, 6, 9, 12)) +
+  ggtitle("B")
+
+# Spearman's rank correlation coefficient for the correlation between total   number of polyps and time in each treatment 
+# control: 
+cor(only_control$time_in_days,only_control$total_num, method= "spearman")
+
+# caffeine: 
+cor(only_caf$time_in_days,only_caf$total_num, method= "spearman")
+
+# estradiol: 
+cor(only_est$time_in_days,only_est$total_num, method= "spearman")
+
+# combination: 
+cor(only_combo$time_in_days,only_combo$total_num, method= "spearman")
+
+```
+
+### Merging The Two Graphs Into One Figure Through Patchwork
+```{r, message=FALSE, warning=FALSE}
+
+(box_total | plot_total)
+```
+
