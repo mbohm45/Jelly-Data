@@ -1,5 +1,5 @@
 # Results
 
-Here you will find all code necessary to recreate the figures we used in our paper, .pdfs of each figure and .pdfs of the supplementary tables (created in Microsoft Word).
+Here you will find .PDF documents of all figures and supplementary tables included in the final report.
 
 xoxo jelly beans
