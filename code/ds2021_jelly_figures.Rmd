@@ -21,7 +21,7 @@ library(fitdistrplus)
 library(gamlss)
 library(tidyverse)
 
-polyp_data <- read_csv("/Users/marabohm/Github/Jelly-Data/data/ds2021_polyp_data.csv")
+polyp_data <- ds2021_polyp_data
 
 ```
 
@@ -181,6 +181,23 @@ box_caf_combo<- ggplot(just_caf_combo, aes(  x = as.factor(time_in_days), y = nu
   labs(x = "Time (days)", y = "Number of Ruffled Polyps", fill ="Treatment") 
 box_caf_combo
 
+
+#Spearman's rank correlation coefficient for the correlation between number of  ruffling polyps and time in each treatment 
+
+# control: 
+cor(only_control$time_in_days, only_control$num_elongated, method= "spearman")
+
+#caffeine 
+cor(only_control$time_in_days, only_caf$num_elongated, method= "spearman")
+
+#estradiol 
+cor(only_control$time_in_days, only_est$num_elongated, method= "spearman")
+
+# combination: 
+cor(only_combo$time_in_days, only_combo$num_elongated, method= "spearman")
+
+
+
 ```
 
 
@@ -294,8 +311,16 @@ plot_buds <- ggplot(just_combo, aes(x=time_in_days, y=num_asexual_buds, colour=t
 # control: 
 cor(only_control$time_in_days, only_control$num_asexual_buds, method= "spearman")
 
+#caffeine 
+cor(only_control$time_in_days, only_caf$num_asexual_buds, method= "spearman")
+
+#estradiol 
+cor(only_control$time_in_days, only_est$num_asexual_buds, method= "spearman")
+
 # combination: 
 cor(only_combo$time_in_days, only_combo$num_asexual_buds, method= "spearman")
+
+
 
 ```
 
