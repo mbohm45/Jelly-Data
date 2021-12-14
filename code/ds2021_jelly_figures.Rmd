@@ -5,7 +5,7 @@ date: "15/12/2021"
 output: pdf_document
 ---
 
-```{r, results=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, results=FALSE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=70), tidy=TRUE)
 # code above ensures no text is cut off when knit
 ```
@@ -21,7 +21,7 @@ library(fitdistrplus)
 library(gamlss)
 library(tidyverse)
 
-polyp_data <- ds2021_polyp_data
+polyp_data <- read_csv("/Users/marabohm/Github/Jelly-Data/data/ds2021_polyp_data.csv")
 
 ```
 
@@ -196,14 +196,12 @@ cor(only_control$time_in_days, only_est$num_elongated, method= "spearman")
 # combination: 
 cor(only_combo$time_in_days, only_combo$num_elongated, method= "spearman")
 
-
-
 ```
 
 
 # Figure 3: Elongation per treatment and over time
 
-# Figure 3A: Box Plot of Overall Elongation per Treatment
+### Figure 3A: Box Plot of Overall Elongation per Treatment
 ```{r, message=FALSE, warning=FALSE, fig.show='hide'}
 
 box_elongation <- ggplot(polyp_clean, aes(x=treatment, y=num_elongated, fill = treatment)) +
@@ -306,7 +304,7 @@ plot_buds <- ggplot(just_combo, aes(x=time_in_days, y=num_asexual_buds, colour=t
   scale_x_continuous(breaks=c(0, 3, 6, 9, 12)) +
   ggtitle("B")
   
-#Spearman's rank correlation coefficient for the correlation between number of  asexual buds and time in each treatment 
+# Spearman's rank correlation coefficient for the correlation between number of  asexual buds and time in each treatment 
 
 # control: 
 cor(only_control$time_in_days, only_control$num_asexual_buds, method= "spearman")
@@ -319,8 +317,6 @@ cor(only_control$time_in_days, only_est$num_asexual_buds, method= "spearman")
 
 # combination: 
 cor(only_combo$time_in_days, only_combo$num_asexual_buds, method= "spearman")
-
-
 
 ```
 
@@ -361,6 +357,7 @@ plot_total <- ggplot(polyp_clean, aes(x=time_in_days, y=total_num, colour=treatm
   ggtitle("B")
 
 # Spearman's rank correlation coefficient for the correlation between total   number of polyps and time in each treatment 
+
 # control: 
 cor(only_control$time_in_days,only_control$total_num, method= "spearman")
 
