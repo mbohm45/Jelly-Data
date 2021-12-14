@@ -4,7 +4,7 @@ author: "Mara Bohm and Naomi Lubkin"
 date: "15/12/2021"
 output: pdf_document
 ---
-```{r, results=FALSE, message=FALSE, warning=FALSE}
+```{r, results=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=70), tidy=TRUE)
 # code above ensures no text is cut off when knit
 ```
@@ -75,9 +75,9 @@ histDist(polyp_clean$num_elongated,
          xlab = "Number Elongated")
 ```
 
-### Step 2: Building the Model
+### Step 2: Building the Model WITH Total As A Random Effect
 ```{r, results=FALSE, message=FALSE, warning=FALSE}
-mod_countwtotal_elongation <- gamlss(num_elongated ~ treatment*collection_day 
+mod_WITHtotal_elongation <- gamlss(num_elongated ~ treatment*collection_day 
                          + re(random = ~1 | jar_code)
                          + re(random = ~1 | total_num), 
                          family = NBII(),
@@ -87,13 +87,30 @@ mod_countwtotal_elongation <- gamlss(num_elongated ~ treatment*collection_day
 
 ```
 
-### Step 3: Summarizing the Model
-```{r, message=FALSE, warning=FALSE}
-
-summary(mod_countwtotal_elongation)
+### Step 3: Building the Model WITHOUT Total As A Random Effect
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+mod_NOtotal_elongation <- gamlss(num_elongated ~ treatment*collection_day 
+                         + re(random = ~1 | jar_code), 
+                         family = NBII(),
+                         method = RS(),
+                         data = polyp_clean, 
+                         control = gamlss.control(n.cyc = 200))
 
 ```
 
+### Step 4: Comparing The With and Without Total Models Using GAIC
+```{r, fig.show='hide', message=FALSE, warning=FALSE}
+
+GAIC(mod_NOtotal_elongation, mod_WITHtotal_elongation)
+
+```
+
+### Step 5: Models Are Effectively The Same - Summarizing With Total Model
+```{r, message=FALSE, warning=FALSE}
+
+summary(mod_WITHtotal_elongation)
+
+```
 
 # Polyp Ruffling
 
@@ -143,9 +160,9 @@ histDist(polyp_clean$num_ruffled,
 
 ```
 
-### Step 2: Building the Model
+### Step 2: Building the Model WITH Total As A Random Effect
 ```{r, results=FALSE, message=FALSE, warning=FALSE}
-mod_countwtotal_ruffled <- gamlss(num_ruffled ~ treatment*collection_day 
+mod_WITHtotal_ruffled <- gamlss(num_ruffled ~ treatment*collection_day 
                       + re(random = ~1 | jar_code)
                       + re(random = ~1 | total_num), 
                       family = WEI(), 
@@ -154,12 +171,30 @@ mod_countwtotal_ruffled <- gamlss(num_ruffled ~ treatment*collection_day
 
 ```
 
-### Step 3: Summarizing the Model
-```{r, message=FALSE, warning=FALSE}
-
-summary(mod_countwtotal_elongation)
+### Step 3: Building the Model WITHOUT Total As A Random Effect
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+mod_NOtotal_ruffled <- gamlss(num_elongated ~ treatment*collection_day 
+                         + re(random = ~1 | jar_code), 
+                         family = WEI(),
+                         data = polyp_clean, 
+                         control = gamlss.control(n.cyc = 200))
 
 ```
+
+### Step 4: Comparing The With and Without Total Models Using GAIC
+```{r, fig.show='hide', message=FALSE, warning=FALSE}
+
+GAIC(mod_NOtotal_ruffled, mod_WITHtotal_ruffled)
+
+```
+
+### Step 5: Models Are Effectively The Same - Summarizing With Total Model
+```{r, message=FALSE, warning=FALSE}
+
+summary(mod_WITHtotal_ruffled)
+
+```
+
 
 # Polyp Asexual Budding
 
@@ -182,9 +217,9 @@ histDist(polyp_clean$num_asexual_buds,
          xlab = "Number of Buds")
 ```
 
-### Step 2: Building the Model
+### Step 2: Building the Model WITH Total As A Random Effect
 ```{r, results=FALSE, message=FALSE, warning=FALSE}
-mod_countwtotal_buds <- gamlss(num_asexual_buds ~ treatment*collection_day 
+mod_WITHtotal_buds <- gamlss(num_asexual_buds ~ treatment*collection_day 
                    + re(random = ~1 | jar_code)
                    + re(random = ~1 | total_num), 
                    family = NBII(), 
@@ -193,12 +228,30 @@ mod_countwtotal_buds <- gamlss(num_asexual_buds ~ treatment*collection_day
 
 ```
 
-### Step 3: Summarizing the Model
-```{r, message=FALSE, warning=FALSE}
-
-summary(mod_countwtotal_buds)
+### Step 3: Building the Model WITHOUT Total As A Random Effect
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+mod_NOtotal_buds <- gamlss(num_elongated ~ treatment*collection_day 
+                         + re(random = ~1 | jar_code), 
+                         family = NBII(),
+                         data = polyp_clean, 
+                         control = gamlss.control(n.cyc = 200))
 
 ```
+
+### Step 4: Comparing The With and Without Total Models Using GAIC
+```{r, fig.show='hide', message=FALSE, warning=FALSE}
+
+GAIC(mod_NOtotal_buds, mod_WITHtotal_buds)
+
+```
+
+### Step 5: Summarizing the Better WITH Total Model
+```{r, message=FALSE, warning=FALSE}
+
+summary(mod_WITHtotal_buds)
+
+```
+
 
 # Polyp Total Number
 
@@ -267,7 +320,7 @@ ruffledcomparisons_data <- polyp_data %>%
 
 ### Step 2: Building the Reordered Ruffled Model
 ```{r, results=FALSE, message=FALSE, warning=FALSE}
-mod_countwtotal_ruffled_reordered <- gamlss(num_ruffled ~ treatment*collection_day 
+mod_WITHtotal_ruffled_reordered <- gamlss(num_ruffled ~ treatment*collection_day 
                    + re(random = ~1 | jar_code)
                    + re(random = ~1 | total_num), 
                    family = WEI(), 
@@ -280,7 +333,7 @@ mod_countwtotal_ruffled_reordered <- gamlss(num_ruffled ~ treatment*collection_d
 ### Step 3: Summarizing the Model
 ```{r, message=FALSE, warning=FALSE}
 
-summary(mod_countwtotal_ruffled_reordered)
+summary(mod_WITHtotal_ruffled_reordered)
 
 ```
 
