@@ -297,7 +297,7 @@ summary(mod_total)
 
 ```{r, results=FALSE, message=FALSE, warning=FALSE}
 
-ruffledcomparisons_data <- polyp_data %>%
+comparisons_data <- polyp_data %>%
   rename(collection_day = 'Data collection day', 
          jar_code = 'Jar Code (ex. E1)', 
          treatment = Chemical, 
@@ -324,7 +324,7 @@ mod_WITHtotal_ruffled_reordered <- gamlss(num_ruffled ~ treatment*collection_day
                    + re(random = ~1 | jar_code)
                    + re(random = ~1 | total_num), 
                    family = WEI(), 
-                   data = ruffledcomparisons_data, 
+                   data = comparisons_data, 
                    control = gamlss.control(n.cyc = 250))
 
 ```
@@ -334,6 +334,28 @@ mod_WITHtotal_ruffled_reordered <- gamlss(num_ruffled ~ treatment*collection_day
 ```{r, message=FALSE, warning=FALSE}
 
 summary(mod_WITHtotal_ruffled_reordered)
+
+```
+
+
+# What About A Difference Between Caffeine and Combo in Budding?
+
+### Step 1: Building the Reordered Budding Model
+```{r, results=FALSE, message=FALSE, warning=FALSE}
+mod_WITHtotal_budding_reordered <- gamlss(num_asexual_buds ~ treatment*collection_day 
+                   + re(random = ~1 | jar_code)
+                   + re(random = ~1 | total_num), 
+                   family = NBII(), 
+                   data = comparisons_data, 
+                   control = gamlss.control(n.cyc = 250))
+
+```
+
+
+### Step 3: Summarizing the Model
+```{r, message=FALSE, warning=FALSE}
+
+summary(mod_WITHtotal_budding_reordered)
 
 ```
 
